@@ -3,11 +3,8 @@ import time
 
 import jwt
 
-from main import env
+import settings
 
-secret_key = env("JWT_SECRET")
-algorithm = env("JWT_ALGORITHM")
-TOKEN_EXPIRED_TIME = 1500
 
 def token_response(token: str):
     return {
@@ -18,16 +15,16 @@ def token_response(token: str):
 def sign_jwt(user_email: str) -> dict[str, str]:
     payload = {
         "user_email": user_email,
-        "expires": time.time() + TOKEN_EXPIRED_TIME
+        "expires": time.time() + settings.TOKEN_EXPIRED_TIME
     }
-    token = jwt.encode(payload, secret_key, algorithm=algorithm)
+    token = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
     return token_response(token)
 
 
 def decode_jwt(token: str) -> dict:
     try:
-        decoded_token = jwt.decode(token, secret_key, algorithms=[algorithm])
+        decoded_token = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         return decoded_token if decoded_token["expires"] >= time.time() else None
     except:
         return {}

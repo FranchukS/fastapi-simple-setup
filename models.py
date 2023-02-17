@@ -14,12 +14,12 @@ class Post(BaseBlogModel):
     title = fields.CharField(max_length=255)
     content = fields.TextField()
     owner = fields.ForeignKeyField(
-        "models.User",
+        "models.UserModel",
         related_name="posts",
         on_delete=fields.CASCADE
     )
     liked_by = fields.ManyToManyField(
-        "models.User",
+        "models.UserModel",
         through="Like",
         related_name="liked_posts",
     )
@@ -34,13 +34,16 @@ class Post(BaseBlogModel):
 class Like(BaseBlogModel):
     post = fields.ForeignKeyField("models.Post", related_name="likes", on_delete=fields.CASCADE)
     user = fields.ForeignKeyField(
-        "models.User", related_name="likes", on_delete=fields.CASCADE
+        "models.UserModel", related_name="likes", on_delete=fields.CASCADE
     )
 
 
-class User(BaseBlogModel):
+class UserModel(BaseBlogModel):
     nickname = fields.CharField(max_length=255)
     email = fields.CharField(max_length=255)
     hash_password = fields.CharField(max_length=255)
     last_login = fields.DatetimeField(auto_now_add=True)
     last_activity = fields.DatetimeField(auto_now_add=True)
+
+    class Meta:
+        table = "users"

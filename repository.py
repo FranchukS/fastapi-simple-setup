@@ -1,6 +1,6 @@
 from tortoise import Model
 
-from models import User, BaseBlogModel, Post, Like
+from models import UserModel, BaseBlogModel, Post, Like
 
 
 class BaseRepo:
@@ -29,12 +29,27 @@ class BaseRepo:
 
 
 class UserRepo(BaseRepo):
-    model = User
+    model = UserModel
+
+    @classmethod
+    async def get_by_email(cls, email: str) -> Model | None:
+        return await cls.model.get_or_none(email=email)
 
 
 class PostRepo(BaseRepo):
     model = Post
+    @classmethod
+    async def get_liked_by(cls, post: Post) -> Model | None:
+        return await post.liked_by.all()
 
 
 class LikeRepo(BaseRepo):
     model = Like
+
+    @classmethod
+    async def get_like(cls, post_id: int, user_id: int) -> Model | None:
+        return await cls.model.get_or_none(id=id)
+
+    @classmethod
+    async def add_like(cls, user: UserModel, post: Post) -> Model:
+        return await cls.model.create(user=user, post=post)
