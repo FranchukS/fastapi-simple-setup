@@ -1,6 +1,4 @@
-from pydantic import BaseModel
 from tortoise import fields, Model
-from tortoise.contrib.pydantic import pydantic_model_creator
 
 
 class BaseBlogModel(Model):
@@ -40,12 +38,9 @@ class Like(BaseBlogModel):
     )
 
 
-class User(Model):
-    name = fields.CharField(max_length=255)
-
-
-class UserIn(BaseModel):
-    name: str
-
-
-UserOut = pydantic_model_creator(User, name="UserOut")
+class User(BaseBlogModel):
+    nickname = fields.CharField(max_length=255)
+    email = fields.CharField(max_length=255)
+    hash_password = fields.CharField(max_length=255)
+    last_login = fields.DatetimeField(auto_now_add=True)
+    last_activity = fields.DatetimeField(auto_now_add=True)
