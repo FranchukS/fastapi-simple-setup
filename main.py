@@ -1,13 +1,14 @@
-from hashlib import sha256
 from datetime import date
+from hashlib import sha256
 
 import uvicorn
 from fastapi import FastAPI, Depends
+from starlette.requests import Request
 from tortoise.contrib.fastapi import register_tortoise
 
 import settings
 from auth.auth_bearer import JWTBearer
-from auth.auth_handler import sign_jwt
+from auth.auth_handler import sign_jwt, decode_jwt
 from repository import UserRepo, PostRepo, LikeRepo
 from schemas import UserSchema, UserOutSchema, UserActivity, PostIn, UserLogin, PostOut
 
@@ -33,6 +34,23 @@ def add_hash_password(user: UserSchema):
     return payload
 
 
+async def get_current_user(request: Request):
+    token = request.headers.get("authorization", "token hash")
+    data = decode_jwt(token.split()[1])
+    if not data:
+        return None
+    return await UserRepo.get_by_email(data["user_email"])
+
+
+@app.middleware("http")
+async def add_process_time_header(request: Request, call_next):
+    user = await get_current_user(request)
+    if user:
+        await UserRepo.set_activity(user)
+    response = await call_next(request)
+    return response
+
+
 @app.post("/users/signup", tags=["user"])
 async def user_signup(user: UserSchema):
     await UserRepo.add(add_hash_password(user))
@@ -42,6 +60,7 @@ async def user_signup(user: UserSchema):
 @app.post("/users/login", tags=["user"])
 async def user_login(user: UserLogin):
     if await check_user(user):
+        await UserRepo.set_login_time(user)
         return sign_jwt(user.email)
     else:
         return {
@@ -60,9 +79,10 @@ async def last_activity(user_id: int):
 
 
 @app.post("/post", response_model=PostOut, dependencies=[Depends(JWTBearer())], tags=["post"])
-async def post_create(post: PostIn):
+async def post_create(post: PostIn, request: Request):
     payload = post.dict()
-    payload["owner_id"] = 1 # get user from jwt token
+    user = await get_current_user(request)
+    payload["owner_id"] = user.id
     return await PostRepo.add(payload)
 
 
@@ -77,9 +97,9 @@ async def get_post(post_id: int):
 
 
 @app.post("/post/{post_id}/like", dependencies=[Depends(JWTBearer())], tags=["post"])
-async def like_or_unlike_post(post_id: int):
+async def like_or_unlike_post(post_id: int, request: Request):
     post = await PostRepo.get(post_id)
-    user = await UserRepo.get(id=1) # get user from jwt token
+    user = await get_current_user(request)
 
     if user in await PostRepo.get_liked_by(post):
         like = await LikeRepo.get_like(user_id=user.id, post_id=post.id)

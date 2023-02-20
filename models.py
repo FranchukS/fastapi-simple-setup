@@ -49,4 +49,4 @@ class User(BaseBlogModel):
     last_activity = fields.DatetimeField(auto_now_add=True)
 
     class Meta:
-        table = "users"
+        table = "user"

@@ -1,9 +1,10 @@
-from datetime import date, timedelta
+from datetime import date, datetime
 
 from tortoise import Model
 from tortoise.functions import Count
 
 from models import User, BaseBlogModel, Post, Like
+from schemas import UserLogin
 
 
 class BaseRepo:
@@ -37,6 +38,16 @@ class UserRepo(BaseRepo):
     @classmethod
     async def get_by_email(cls, email: str) -> Model | None:
         return await cls.model.get_or_none(email=email)
+    @classmethod
+    async def set_activity(cls, user: User) -> None:
+        user.last_activity = datetime.now()
+        await user.save()
+
+    @classmethod
+    async def set_login_time(cls, user: UserLogin):
+        user = await cls.get_by_email(user.email)
+        user.last_login = datetime.now()
+        await user.save()
 
 
 class PostRepo(BaseRepo):
