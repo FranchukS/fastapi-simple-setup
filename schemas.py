@@ -1,9 +1,6 @@
-from datetime import date
+from datetime import date, datetime
 
 from pydantic import EmailStr, BaseModel
-from tortoise.contrib.pydantic import pydantic_model_creator
-
-from models import Post
 
 
 class UserSchema(BaseModel):
@@ -23,15 +20,11 @@ class UserOutSchema(BaseModel):
     email: str
 
 
-class UserLike(BaseModel):
-    nickname: str
-
-
 class UserActivity(BaseModel):
     nickname: str
     email: str
-    last_login: date
-    last_activity: date
+    last_login: datetime
+    last_activity: datetime
 
 
 class PostIn(BaseModel):

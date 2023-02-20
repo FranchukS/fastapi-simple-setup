@@ -1,13 +1,16 @@
-from tortoise import Model
+from datetime import date, timedelta
 
-from models import UserModel, BaseBlogModel, Post, Like
+from tortoise import Model
+from tortoise.functions import Count
+
+from models import User, BaseBlogModel, Post, Like
 
 
 class BaseRepo:
     model: BaseBlogModel
 
     @classmethod
-    async def get(cls, id: int) -> Model | None:
+    async def get(cls, id: int) -> Model:
         return await cls.model.get_or_none(id=id)
 
     @classmethod
@@ -29,7 +32,7 @@ class BaseRepo:
 
 
 class UserRepo(BaseRepo):
-    model = UserModel
+    model = User
 
     @classmethod
     async def get_by_email(cls, email: str) -> Model | None:
@@ -38,6 +41,7 @@ class UserRepo(BaseRepo):
 
 class PostRepo(BaseRepo):
     model = Post
+
     @classmethod
     async def get_liked_by(cls, post: Post) -> Model | None:
         return await post.liked_by.all()
@@ -48,8 +52,18 @@ class LikeRepo(BaseRepo):
 
     @classmethod
     async def get_like(cls, post_id: int, user_id: int) -> Model | None:
-        return await cls.model.get_or_none(id=id)
+        return await cls.model.filter(post_id=post_id, user_id=user_id).first()
 
     @classmethod
-    async def add_like(cls, user: UserModel, post: Post) -> Model:
+    async def add_like(cls, user: User, post: Post) -> Model:
         return await cls.model.create(user=user, post=post)
+
+    @classmethod
+    async def likes_by_day(cls, start_date: date, end_date: date):
+        likes_by_day = (
+            Like.filter(date__gte=start_date, date__lte=end_date)
+            .annotate(quantity=Count("id"))
+            .group_by("date")
+            .values("date", "quantity")
+        )
+        return await likes_by_day
